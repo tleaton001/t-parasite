@@ -1,0 +1,6 @@
+board:
+  name: t_parasite
+  full_name: t_parasite
+  vendor: Travis_Leaton
+  socs:
+    - name: nrf52810

@@ -1,0 +1,10 @@
+identifier: t_parasite/nrf52810
+name: plant_soil_meter
+vendor: Travis_Leaton
+type: mcu
+arch: arm
+ram: 24
+flash: 56
+toolchain:
+  - zephyr
+supported: []

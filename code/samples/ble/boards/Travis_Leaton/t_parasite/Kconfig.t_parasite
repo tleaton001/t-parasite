@@ -1,0 +1,2 @@
+config BOARD_T_PARASITE
+	select SOC_NRF52810_QFAA

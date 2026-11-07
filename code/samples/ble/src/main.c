@@ -46,14 +46,25 @@ static int prst_loop(prst_sensors_t *sensors) {
 }
 
 int main(void) {
-  __ASSERT(!prst_init(), "Error in prst_init()");
-  prst_led_flash(2);
+  prst_led_init();
+  prst_led_flash(1);          // 1 flash: main() was reached
+
+  int err = prst_init();
+  if (err) {
+    LOG_ERR("prst_init() failed: %d", err);
+    return err;
+  }
+  prst_led_flash(2);          // 2 flashes: all init steps passed
 
   dump_config();
 
   prst_sensors_t sensors;
   while (true) {
-    __ASSERT(!prst_loop(&sensors), "Error in prst_loop()");
+    err = prst_loop(&sensors);
+    if (err) {
+      LOG_ERR("prst_loop() failed: %d", err);
+    }
+    prst_led_flash(1);        // 1 flash every cycle: the loop is alive
     k_msleep(CONFIG_PRST_SLEEP_DURATION_MSEC);
   }
 }

@@ -21,8 +21,11 @@ static const uint32_t pulse = DT_PROP(DT_NODELABEL(soil_pwm), pulse);
 static const int dry_coeffs[3] = DT_PROP(DT_NODELABEL(soil_calibration_coeffs), dry);
 static const int wet_coeffs[3] = DT_PROP(DT_NODELABEL(soil_calibration_coeffs), wet);
 
+#if DT_NODE_EXISTS(DT_NODELABEL(fast_disch))
+#define HAS_FAST_DISCH 1
 struct gpio_dt_spec fast_disch_dt =
     GPIO_DT_SPEC_GET(DT_NODELABEL(fast_disch), gpios);
+#endif
 
 // Shared buffer and adc_sequennce.
 static int16_t buf;
@@ -121,8 +124,10 @@ int prst_adc_init() {
   RET_IF_ERR(adc_channel_setup_dt(&adc_soil_spec));
   RET_IF_ERR(adc_channel_setup_dt(&adc_batt_spec));
 
+ #ifdef HAS_FAST_DISCH
   RET_IF_ERR(!device_is_ready(fast_disch_dt.port));
   RET_IF_ERR(gpio_pin_configure_dt(&fast_disch_dt, GPIO_OUTPUT));
+#endif
 
 #if DT_NODE_EXISTS(DT_NODELABEL(photo_transistor))
   RET_IF_ERR(adc_channel_setup_dt(&adc_photo_transistor_spec));
@@ -149,17 +154,21 @@ int prst_adc_batt_read(prst_batt_t* out) {
   return 0;
 }
 
-int prst_adc_soil_read(float battery_voltage, prst_adc_soil_moisture_t* out) {
-  // Enable fast discharge circuit.
+ int prst_adc_soil_read(float battery_voltage, prst_adc_soil_moisture_t* out) {
+#ifdef HAS_FAST_DISCH
+  // Enable fast discharge circuit (boards with a dedicated discharge pin).
   RET_IF_ERR(gpio_pin_set_dt(&fast_disch_dt, 1));
+#endif
   // Start PWM.
   RET_IF_ERR(pwm_set_dt(&soil_pwm_dt, soil_pwm_dt.period, pulse));
   k_msleep(30);
   RET_IF_ERR(read_adc_spec(&adc_soil_spec, &out->adc_read));
   // Stop PWM.
   RET_IF_ERR(pwm_set_dt(&soil_pwm_dt, 0, 0));
+#ifdef HAS_FAST_DISCH
   // Turn off fast discharge circuit.
   RET_IF_ERR(gpio_pin_set_dt(&fast_disch_dt, 0));
+#endif
   out->percentage =
       MAX(0.0f, MIN(1.0f, get_soil_moisture_percent(battery_voltage, buf)));
   return 0;
